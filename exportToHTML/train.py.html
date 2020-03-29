@@ -1,0 +1,113 @@
+<html>
+<head>
+<title>train.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6897bb;}
+.s4 { color: #a5c261;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+train.py</font>
+</center></td></tr></table>
+<pre><span class="s0"># train.py</span>
+<span class="s2">import </span><span class="s1">cv2</span><span class="s2">, </span><span class="s1">sys</span><span class="s2">, </span><span class="s1">numpy</span><span class="s2">, </span><span class="s1">os</span>
+<span class="s1">size = </span><span class="s3">4</span>
+<span class="s1">fn_haar = </span><span class="s4">'haarcascade_frontalface_default.xml'</span>
+<span class="s1">fn_dir = </span><span class="s4">'att_faces'</span>
+<span class="s2">try</span><span class="s1">:</span>
+    <span class="s1">fn_name = </span><span class="s4">'Talha'</span>
+<span class="s2">except</span><span class="s1">:</span>
+    <span class="s2">print</span><span class="s1">(</span><span class="s4">&quot;You must provide a name&quot;</span><span class="s1">)</span>
+    <span class="s1">sys.exit(</span><span class="s3">0</span><span class="s1">)</span>
+<span class="s1">path = os.path.join(fn_dir</span><span class="s2">, </span><span class="s1">fn_name)</span>
+<span class="s2">if not </span><span class="s1">os.path.isdir(path):</span>
+    <span class="s1">os.mkdir(path)</span>
+<span class="s1">(im_width</span><span class="s2">, </span><span class="s1">im_height) = (</span><span class="s3">112</span><span class="s2">, </span><span class="s3">92</span><span class="s1">)</span>
+<span class="s1">haar_cascade = cv2.CascadeClassifier(fn_haar)</span>
+<span class="s1">webcam = cv2.VideoCapture(</span><span class="s3">0</span><span class="s1">)</span>
+
+<span class="s0"># Generate name for image file</span>
+<span class="s1">pin=sorted([int(n[:n.find(</span><span class="s4">'.'</span><span class="s1">)]) </span><span class="s2">for </span><span class="s1">n </span><span class="s2">in </span><span class="s1">os.listdir(path)</span>
+     <span class="s2">if </span><span class="s1">n[</span><span class="s3">0</span><span class="s1">]!=</span><span class="s4">'.' </span><span class="s1">]+[</span><span class="s3">0</span><span class="s1">])[-</span><span class="s3">1</span><span class="s1">] + </span><span class="s3">1</span>
+
+<span class="s0"># Beginning message</span>
+<span class="s2">print</span><span class="s1">(</span><span class="s4">&quot;</span><span class="s2">\n\033</span><span class="s4">[94mThe program will save 20 samples. </span><span class="s2">\ 
+</span><span class="s4">Move your head around to increase while it runs.</span><span class="s2">\033</span><span class="s4">[0m</span><span class="s2">\n</span><span class="s4">&quot;</span><span class="s1">)</span>
+
+<span class="s0"># The program loops until it has 20 images of the face.</span>
+<span class="s1">count = </span><span class="s3">0</span>
+<span class="s1">pause = </span><span class="s3">0</span>
+<span class="s1">count_max = </span><span class="s3">20</span>
+<span class="s2">while </span><span class="s1">count &lt; count_max:</span>
+
+    <span class="s0"># Loop until the camera is working</span>
+    <span class="s1">rval = False</span>
+    <span class="s2">while</span><span class="s1">(</span><span class="s2">not </span><span class="s1">rval):</span>
+        <span class="s0"># Put the image from the webcam into 'frame'</span>
+        <span class="s1">(rval</span><span class="s2">, </span><span class="s1">frame) = webcam.read()</span>
+        <span class="s2">if</span><span class="s1">(</span><span class="s2">not </span><span class="s1">rval):</span>
+            <span class="s2">print</span><span class="s1">(</span><span class="s4">&quot;Failed to open webcam. Trying again...&quot;</span><span class="s1">)</span>
+
+    <span class="s0"># Get image size</span>
+    <span class="s1">height</span><span class="s2">, </span><span class="s1">width</span><span class="s2">, </span><span class="s1">channels = frame.shape</span>
+
+    <span class="s0"># Flip frame</span>
+    <span class="s1">frame = cv2.flip(frame</span><span class="s2">, </span><span class="s3">1</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span>
+
+    <span class="s0"># Convert to grayscale</span>
+    <span class="s1">gray = cv2.cvtColor(frame</span><span class="s2">, </span><span class="s1">cv2.COLOR_BGR2GRAY)</span>
+
+    <span class="s0"># Scale down for speed</span>
+    <span class="s1">mini = cv2.resize(gray</span><span class="s2">, </span><span class="s1">(int(gray.shape[</span><span class="s3">1</span><span class="s1">] / size)</span><span class="s2">, </span><span class="s1">int(gray.shape[</span><span class="s3">0</span><span class="s1">] / size)))</span>
+
+    <span class="s0"># Detect faces</span>
+    <span class="s1">faces = haar_cascade.detectMultiScale(mini)</span>
+
+    <span class="s0"># We only consider largest face</span>
+    <span class="s1">faces = sorted(faces</span><span class="s2">, </span><span class="s1">key=</span><span class="s2">lambda </span><span class="s1">x: x[</span><span class="s3">3</span><span class="s1">])</span>
+    <span class="s2">if </span><span class="s1">faces:</span>
+        <span class="s1">face_i = faces[</span><span class="s3">0</span><span class="s1">]</span>
+        <span class="s1">(x</span><span class="s2">, </span><span class="s1">y</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h) = [v * size </span><span class="s2">for </span><span class="s1">v </span><span class="s2">in </span><span class="s1">face_i]</span>
+
+        <span class="s1">face = gray[y:y + h</span><span class="s2">, </span><span class="s1">x:x + w]</span>
+        <span class="s1">face_resize = cv2.resize(face</span><span class="s2">, </span><span class="s1">(im_width</span><span class="s2">, </span><span class="s1">im_height))</span>
+
+        <span class="s0"># Draw rectangle and write name</span>
+        <span class="s1">cv2.rectangle(frame</span><span class="s2">, </span><span class="s1">(x</span><span class="s2">, </span><span class="s1">y)</span><span class="s2">, </span><span class="s1">(x + w</span><span class="s2">, </span><span class="s1">y + h)</span><span class="s2">, </span><span class="s1">(</span><span class="s3">0</span><span class="s2">, </span><span class="s3">255</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span><span class="s2">, </span><span class="s3">3</span><span class="s1">)</span>
+        <span class="s1">cv2.putText(frame</span><span class="s2">, </span><span class="s1">fn_name</span><span class="s2">, </span><span class="s1">(x - </span><span class="s3">10</span><span class="s2">, </span><span class="s1">y - </span><span class="s3">10</span><span class="s1">)</span><span class="s2">, </span><span class="s1">cv2.FONT_HERSHEY_PLAIN</span><span class="s2">,</span>
+            <span class="s3">1</span><span class="s2">,</span><span class="s1">(</span><span class="s3">0</span><span class="s2">, </span><span class="s3">255</span><span class="s2">, </span><span class="s3">0</span><span class="s1">))</span>
+
+        <span class="s0"># Remove false positives</span>
+        <span class="s2">if</span><span class="s1">(w * </span><span class="s3">6 </span><span class="s1">&lt; width </span><span class="s2">or </span><span class="s1">h * </span><span class="s3">6 </span><span class="s1">&lt; height):</span>
+            <span class="s2">print</span><span class="s1">(</span><span class="s4">&quot;Face too small&quot;</span><span class="s1">)</span>
+        <span class="s2">else</span><span class="s1">:</span>
+
+            <span class="s0"># To create diversity, only save every fith detected image</span>
+            <span class="s2">if</span><span class="s1">(pause == </span><span class="s3">0</span><span class="s1">):</span>
+
+                <span class="s2">print</span><span class="s1">(</span><span class="s4">&quot;Saving training sample &quot;</span><span class="s1">+str(count+</span><span class="s3">1</span><span class="s1">)+</span><span class="s4">&quot;/&quot;</span><span class="s1">+str(count_max))</span>
+
+                <span class="s0"># Save image file</span>
+                <span class="s1">cv2.imwrite(</span><span class="s4">'%s/%s.png' </span><span class="s1">% (path</span><span class="s2">, </span><span class="s1">pin)</span><span class="s2">, </span><span class="s1">face_resize)</span>
+
+                <span class="s1">pin += </span><span class="s3">1</span>
+                <span class="s1">count += </span><span class="s3">1</span>
+
+                <span class="s1">pause = </span><span class="s3">1</span>
+
+    <span class="s2">if</span><span class="s1">(pause &gt; </span><span class="s3">0</span><span class="s1">):</span>
+        <span class="s1">pause = (pause + </span><span class="s3">1</span><span class="s1">) % </span><span class="s3">5</span>
+    <span class="s1">cv2.imshow(</span><span class="s4">'OpenCV'</span><span class="s2">, </span><span class="s1">frame)</span>
+    <span class="s1">key = cv2.waitKey(</span><span class="s3">10</span><span class="s1">)</span>
+    <span class="s2">if </span><span class="s1">key == </span><span class="s3">27</span><span class="s1">:</span>
+        <span class="s2">break</span>
+</pre>
+</body>
+</html>

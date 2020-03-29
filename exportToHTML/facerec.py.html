@@ -1,0 +1,121 @@
+<html>
+<head>
+<title>facerec.py</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">
+.s0 { color: #808080;}
+.s1 { color: #a9b7c6;}
+.s2 { color: #cc7832;}
+.s3 { color: #6897bb;}
+.s4 { color: #a5c261;}
+</style>
+</head>
+<body bgcolor="#2b2b2b">
+<table CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#606060" >
+<tr><td><center>
+<font face="Arial, Helvetica" color="#000000">
+facerec.py</font>
+</center></td></tr></table>
+<pre><span class="s0"># facerec.py</span>
+<span class="s2">import </span><span class="s1">cv2</span><span class="s2">, </span><span class="s1">sys</span><span class="s2">, </span><span class="s1">numpy</span><span class="s2">, </span><span class="s1">os</span>
+<span class="s2">from </span><span class="s1">gtts </span><span class="s2">import </span><span class="s1">gTTS</span>
+<span class="s2">import </span><span class="s1">pyttsx</span>
+<span class="s1">size = </span><span class="s3">2</span>
+<span class="s1">fn_haar = </span><span class="s4">'haarcascade_frontalface_default.xml'</span>
+<span class="s1">fn_dir = </span><span class="s4">'D:/Computer Vission/face-recognition-python-master/att_faces'</span>
+
+<span class="s0"># Part 1: Create fisherRecognizer</span>
+<span class="s2">print</span><span class="s1">(</span><span class="s4">'Training...'</span><span class="s1">)</span>
+
+<span class="s0"># Create a list of images and a list of corresponding names</span>
+<span class="s1">(images</span><span class="s2">, </span><span class="s1">lables</span><span class="s2">, </span><span class="s1">names</span><span class="s2">, </span><span class="s1">id) = ([]</span><span class="s2">, </span><span class="s1">[]</span><span class="s2">, </span><span class="s1">{}</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span>
+
+<span class="s0"># Get the folders containing the training data</span>
+<span class="s2">for </span><span class="s1">(subdirs</span><span class="s2">, </span><span class="s1">dirs</span><span class="s2">, </span><span class="s1">files) </span><span class="s2">in </span><span class="s1">os.walk(fn_dir):</span>
+
+    <span class="s0"># Loop through each folder named after the subject in the photos</span>
+    <span class="s2">for </span><span class="s1">subdir </span><span class="s2">in </span><span class="s1">dirs:</span>
+        <span class="s1">names[id] = subdir</span>
+        <span class="s1">subjectpath = os.path.join(fn_dir</span><span class="s2">, </span><span class="s1">subdir)</span>
+
+        <span class="s0"># Loop through each photo in the folder</span>
+        <span class="s2">for </span><span class="s1">filename </span><span class="s2">in </span><span class="s1">os.listdir(subjectpath):</span>
+
+            <span class="s0"># Skip non-image formates</span>
+            <span class="s1">f_name</span><span class="s2">, </span><span class="s1">f_extension = os.path.splitext(filename)</span>
+            <span class="s2">if</span><span class="s1">(f_extension.lower() </span><span class="s2">not in</span>
+                    <span class="s1">[</span><span class="s4">'.png'</span><span class="s2">,</span><span class="s4">'.jpg'</span><span class="s2">,</span><span class="s4">'.jpeg'</span><span class="s2">,</span><span class="s4">'.gif'</span><span class="s2">,</span><span class="s4">'.pgm'</span><span class="s1">]):</span>
+                <span class="s2">print</span><span class="s1">(</span><span class="s4">&quot;Skipping &quot;</span><span class="s1">+filename+</span><span class="s4">&quot;, wrong file type&quot;</span><span class="s1">)</span>
+                <span class="s2">continue</span>
+            <span class="s1">path = subjectpath + </span><span class="s4">'/' </span><span class="s1">+ filename</span>
+            <span class="s1">lable = id</span>
+
+            <span class="s0"># Add to training data</span>
+            <span class="s1">images.append(cv2.imread(path</span><span class="s2">, </span><span class="s3">0</span><span class="s1">))</span>
+            <span class="s1">lables.append(int(lable))</span>
+        <span class="s1">id += </span><span class="s3">1</span>
+<span class="s1">(im_width</span><span class="s2">, </span><span class="s1">im_height) = (</span><span class="s3">112</span><span class="s2">, </span><span class="s3">92</span><span class="s1">)</span>
+
+<span class="s0"># Create a Numpy array from the two lists above</span>
+<span class="s1">(images</span><span class="s2">, </span><span class="s1">lables) = [numpy.array(lis) </span><span class="s2">for </span><span class="s1">lis </span><span class="s2">in </span><span class="s1">[images</span><span class="s2">, </span><span class="s1">lables]]</span>
+
+<span class="s0"># OpenCV trains a model from the images</span>
+<span class="s0"># NOTE FOR OpenCV2: remove '.face'</span>
+<span class="s1">model = cv2.face.createFisherFaceRecognizer()</span>
+<span class="s1">model.train(images</span><span class="s2">, </span><span class="s1">lables)</span>
+
+<span class="s0"># Part 2: Use fisherRecognizer on camera stream</span>
+<span class="s1">haar_cascade = cv2.CascadeClassifier(fn_haar)</span>
+<span class="s1">webcam = cv2.VideoCapture(</span><span class="s3">0</span><span class="s1">)</span>
+<span class="s2">while </span><span class="s1">True:</span>
+
+    <span class="s0"># Loop until the camera is working</span>
+    <span class="s1">rval = False</span>
+    <span class="s2">while</span><span class="s1">(</span><span class="s2">not </span><span class="s1">rval):</span>
+        <span class="s0"># Put the image from the webcam into 'frame'</span>
+        <span class="s1">(rval</span><span class="s2">, </span><span class="s1">frame) = webcam.read()</span>
+        <span class="s2">if</span><span class="s1">(</span><span class="s2">not </span><span class="s1">rval):</span>
+            <span class="s2">print</span><span class="s1">(</span><span class="s4">&quot;Failed to open webcam. Trying again...&quot;</span><span class="s1">)</span>
+
+    <span class="s0"># Flip the image (optional)</span>
+    <span class="s1">frame=cv2.flip(frame</span><span class="s2">,</span><span class="s3">1</span><span class="s2">,</span><span class="s3">0</span><span class="s1">)</span>
+
+    <span class="s0"># Convert to grayscalel</span>
+    <span class="s1">gray = cv2.cvtColor(frame</span><span class="s2">, </span><span class="s1">cv2.COLOR_BGR2GRAY)</span>
+
+    <span class="s0"># Resize to speed up detection (optinal, change size above)</span>
+    <span class="s1">mini = cv2.resize(gray</span><span class="s2">, </span><span class="s1">(int(gray.shape[</span><span class="s3">1</span><span class="s1">] / size)</span><span class="s2">, </span><span class="s1">int(gray.shape[</span><span class="s3">0</span><span class="s1">] / size)))</span>
+
+    <span class="s0"># Detect faces and loop through each one</span>
+    <span class="s1">faces = haar_cascade.detectMultiScale(mini)</span>
+    <span class="s2">for </span><span class="s1">i </span><span class="s2">in </span><span class="s1">range(len(faces)):</span>
+        <span class="s1">face_i = faces[i]</span>
+
+        <span class="s0"># Coordinates of face after scaling back by `size`</span>
+        <span class="s1">(x</span><span class="s2">, </span><span class="s1">y</span><span class="s2">, </span><span class="s1">w</span><span class="s2">, </span><span class="s1">h) = [v * size </span><span class="s2">for </span><span class="s1">v </span><span class="s2">in </span><span class="s1">face_i]</span>
+        <span class="s1">face = gray[y:y + h</span><span class="s2">, </span><span class="s1">x:x + w]</span>
+        <span class="s1">face_resize = cv2.resize(face</span><span class="s2">, </span><span class="s1">(im_width</span><span class="s2">, </span><span class="s1">im_height))</span>
+
+        <span class="s0"># Try to recognize the face</span>
+        <span class="s1">prediction = model.predict(face_resize)</span>
+        <span class="s1">cv2.rectangle(frame</span><span class="s2">, </span><span class="s1">(x</span><span class="s2">, </span><span class="s1">y)</span><span class="s2">, </span><span class="s1">(x + w</span><span class="s2">, </span><span class="s1">y + h)</span><span class="s2">, </span><span class="s1">(</span><span class="s3">0</span><span class="s2">, </span><span class="s3">255</span><span class="s2">, </span><span class="s3">0</span><span class="s1">)</span><span class="s2">, </span><span class="s3">3</span><span class="s1">)</span>
+
+        <span class="s1">mytext = names[prediction[</span><span class="s3">0</span><span class="s1">]]</span>
+        <span class="s1">language = </span><span class="s4">'en'</span>
+        <span class="s1">myobj = gTTS(text=mytext</span><span class="s2">, </span><span class="s1">lang=language</span><span class="s2">, </span><span class="s1">slow=False)</span>
+        <span class="s1">myobj.save(</span><span class="s4">'welcome.mp3'</span><span class="s1">)</span>
+        <span class="s1">os.system(</span><span class="s4">'start welcome.mp3'</span><span class="s1">)</span>
+        <span class="s0"># os.system(&quot;espeak mytext&quot;)</span>
+
+        <span class="s0"># [1]</span>
+        <span class="s0"># Write the name of recognized face</span>
+        <span class="s1">cv2.putText(frame</span><span class="s2">,</span>
+           <span class="s4">'%s - %.0f' </span><span class="s1">% (names[prediction[</span><span class="s3">0</span><span class="s1">]]</span><span class="s2">,</span><span class="s1">prediction[</span><span class="s3">1</span><span class="s1">])</span><span class="s2">,</span>
+           <span class="s1">(x-</span><span class="s3">10</span><span class="s2">, </span><span class="s1">y-</span><span class="s3">10</span><span class="s1">)</span><span class="s2">, </span><span class="s1">cv2.FONT_HERSHEY_PLAIN</span><span class="s2">,</span><span class="s3">1</span><span class="s2">,</span><span class="s1">(</span><span class="s3">0</span><span class="s2">, </span><span class="s3">255</span><span class="s2">, </span><span class="s3">0</span><span class="s1">))</span>
+    <span class="s0"># Show the image and check for ESC being pressed</span>
+    <span class="s1">cv2.imshow(</span><span class="s4">'OpenCV'</span><span class="s2">, </span><span class="s1">frame)</span>
+    <span class="s1">key = cv2.waitKey(</span><span class="s3">10</span><span class="s1">)</span>
+    <span class="s2">if </span><span class="s1">key == </span><span class="s3">27</span><span class="s1">:</span>
+        <span class="s2">break</span></pre>
+</body>
+</html>
